@@ -24,8 +24,8 @@ class Step:
         self.step_frame = tk.Frame(procedure_list, bg=dark_theme_background)
         self.title_frame = tk.Frame(self.step_frame, bg=color['bg'])
         self.index_label = tk.Label(self.title_frame, fg=color['txt'], bg=color['bg'], text=str(self.index),
-                                     font=("Arial", 24),
-                                     padx=20, pady=5, width=5, anchor='w')
+                                    font=("Arial", 24),
+                                    padx=20, pady=5, width=5, anchor='w')
         self.description_label = tk.Label(self.title_frame, fg=color['txt'], bg=color['bg'], text=self.title, padx=10,
                                           pady=5,
                                           anchor='w')
@@ -61,7 +61,7 @@ class Step:
 
     def update_status(self, new_status, isFocus=True):
         self.status = new_status
-        self._update(True)      # force true for now
+        self._update(True)  # force true for now
 
     def _update(self, isFocus):
         color = colors[self.status]
@@ -78,5 +78,7 @@ class Step:
         self.info_frame['text'] = f"Status: {self.status}\nAdditional Info: {self.description}\n"
         self.isFocus = isFocus or self.status == IN_PROGRESS
 
-        if self.isFocus: self.info_frame.pack(fill="x")
-        else: self.info_frame.pack_forget()
+        if self.isFocus:
+            self.info_frame.pack(fill="x")
+        else:
+            self.info_frame.pack_forget()

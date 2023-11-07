@@ -3,7 +3,7 @@ import time
 import tkinter as tk
 from CustomScrollBar import ScrollBar
 from shared import *
-from step import Step
+from Step import Step
 import cv2
 from PIL import Image, ImageTk
 
