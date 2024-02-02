@@ -82,3 +82,15 @@ class Step:
             self.info_frame.pack(fill="x")
         else:
             self.info_frame.pack_forget()
+
+    def validate(self, data):
+        """
+        Crux of decision logic goes here.
+
+        :param data: a dict of CV data (bounding boxes) and sensor data.
+        :return: True/False if the step is being correctly done based on the data given
+        """
+
+        # TODO: define step's criteria & validate against that
+
+        return True

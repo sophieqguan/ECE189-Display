@@ -7,9 +7,44 @@ from Step import Step
 import cv2
 from PIL import Image, ImageTk
 
+current_step = 0
+procedure = []
+gui = None
+
+def decision_logic():
+    global procedure, current_step, gui
+    while True:     # prevent calling before initialization
+        if gui is not None: break
+
+    while current_step < len(procedure):
+        """
+        Decision making frame goes here: we're simply calling validate() on the current step. Each step has its 
+        own `validate()` method that is defined at initialization of the procedure. The crux of decision logic is 
+        stored in each step, since each step has different criteria (unless there's some other way to implement it)
+    
+        (?) Methods that should be called here are 1) CV detect and 2) sensor detect. 
+    
+        :param data: a dict of CV data (bounding boxes) and sensor data. Or, evoke methods in main to get these data.
+        """
+
+        data = "ALPACAS"
+        # data['CV'] = blah blah
+        # data['sensor'] = blob blob
+        # data['lala'] = wawa
+
+        # TESTING ONLY: always validate to true after 10 seconds (lol)
+        if procedure[current_step].validate(data):
+            gui.mark_step_done(DONE)
+        time.sleep(10)
 
 class DisplayGUI:
     def __init__(self, app):
+        """
+        Initializations of the GUI components.
+        :param app: a TK root object
+        """
+        global procedure, current_step
+
         self.app = app
         self.app.title("Project Pete")
         # "responsive" sizing
@@ -27,7 +62,7 @@ class DisplayGUI:
         self.livestream.pack(padx=(80, 50), pady=(40, 0))
 
         # Separate thread for live stream to not cause lagging
-        update_thread = threading.Thread(target=self.update_frame)
+        update_thread = threading.Thread(target=self._update_frame)
         update_thread.daemon = True
         update_thread.start()
 
@@ -46,7 +81,7 @@ class DisplayGUI:
         self.runtime_label.pack(padx=(100, 0))
 
         # Create a thread for updating the runtime label
-        runtime_thread = threading.Thread(target=self.update_runtime)
+        runtime_thread = threading.Thread(target=self._update_runtime)
         runtime_thread.daemon = True
         runtime_thread.start()
 
@@ -78,10 +113,10 @@ class DisplayGUI:
         self.procedure_list.pack(side="right", fill="both", expand=True)
         self.canvas.create_window((0, 0), window=self.procedure_list, anchor="nw", tags="canvas_frame")
 
-        self.procedure = self.get_procedure()
+        procedure = self.get_procedure()
         # initialize lists in GUI
-        for step in self.procedure:
-            if step.status == IN_PROGRESS: self.current_step = step.index
+        for step in procedure:
+            if step.status == IN_PROGRESS: current_step = step.index
             step.build(self.procedure_list)
 
         # Override button
@@ -90,10 +125,26 @@ class DisplayGUI:
         self.override.pack(fill="x", expand=False, padx=(10, 25), pady=(20, 10))
         self.override.bind("<ButtonRelease-1>", self.override_mark_done)
 
+        # Decision logic ===================================
+        # Separate thread for communicating with other functions to get decision result
+        logic_thread = threading.Thread(target=decision_logic)
+        logic_thread.daemon = True
+        logic_thread.start()
+
     def get_procedure(self):
-        # Add dummy steps to the procedure for now
+        """
+        Gets steps in a procedure.
+        Step is a defined class. More stuff can be added in there to help with validation.
+        TODO: actual steps lol
+        """
+        global procedure, current_step
+
+        # clear out and initialize procedure + step count
         procedure = []
-        self.current_step = 0
+        current_step = 0
+
+        # dummy steps
+        # TODO: define steps & their individual criteria
         for i in range(10):
             if i < 2:
                 t = i
@@ -106,19 +157,32 @@ class DisplayGUI:
             procedure.append(s)
         return procedure
 
-    # override button
-    def override_mark_done(self, e):
-        # print("hay")
-        isLastStep = self.current_step == len(self.procedure)
-        self.procedure[self.current_step - 1].update_status(DONE_OV, isFocus=isLastStep)
+    def mark_step_done(self, done_type):
+        """
+        Mark step as done and go to next step (if exists)
+        :param done_type: DONE_OV (overriden), DONE (regular auto-approved)
+        """
+        global current_step, procedure
+
+        isLastStep = current_step == len(procedure)
+        procedure[current_step - 1].update_status(done_type, isFocus=isLastStep)
 
         self.canvas.yview_moveto(1.0)
         if isLastStep: return
 
-        self.current_step += 1
-        self.procedure[self.current_step - 1].update_status(IN_PROGRESS)
+        current_step += 1
+        procedure[current_step - 1].update_status(IN_PROGRESS)
 
-    def update_frame(self):
+    def override_mark_done(self, e):
+        """
+        Overrides logic decision (mark as complete - OV)
+        """
+        self.mark_step_done(DONE_OV)
+
+    def _update_frame(self):
+        """
+        Helper function to load a vid stream from camera
+        """
         # cap = cv2.VideoCapture(live_stream_url)
         cap = cv2.VideoCapture(0)  # camera
         if cap.isOpened():
@@ -132,8 +196,10 @@ class DisplayGUI:
                     self.livestream.image = photo
         cap.release()
 
-    # Function to update the runtime label
-    def update_runtime(self):
+    def _update_runtime(self):
+        """
+        Helper function to update runtime clock
+        """
         start_time = time.time()
         while True:
             current_time = time.time()
@@ -151,5 +217,6 @@ class DisplayGUI:
 
 if __name__ == '__main__':
     root = tk.Tk()
-    app = DisplayGUI(root)
+    gui = DisplayGUI(root)
     root.mainloop()
+
